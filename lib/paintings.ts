@@ -80,6 +80,62 @@ export const paintings: Painting[] = [
       { id: 'sail', kind: 'linear', m: -2, b: 6, from: 0, to: 4, color: PINK },
     ],
   },
+  {
+    id: 'envelope',
+    name: 'The Envelope',
+    hint: 'A sealed letter — a rectangle with a folded triangular flap.',
+    segments: [
+      { id: 'bottom', kind: 'linear', m: 0, b: -2, from: -4, to: 4, color: BLUE },
+      { id: 'left', kind: 'vertical', x: -4, from: -2, to: 2, color: BLUE },
+      { id: 'right', kind: 'vertical', x: 4, from: -2, to: 2, color: BLUE },
+      { id: 'top', kind: 'linear', m: 0, b: 2, from: -4, to: 4, color: BLUE },
+      { id: 'flap-l', kind: 'linear', m: -1, b: -2, from: -4, to: 0, color: RED },
+      { id: 'flap-r', kind: 'linear', m: 1, b: -2, from: 0, to: 4, color: RED },
+    ],
+  },
+  {
+    id: 'rocket',
+    name: 'The Rocket',
+    hint: 'A capsule with a pointed nose and two angled fins.',
+    segments: [
+      { id: 'body-l', kind: 'vertical', x: -2, from: -3, to: 3, color: BLUE },
+      { id: 'body-r', kind: 'vertical', x: 2, from: -3, to: 3, color: BLUE },
+      { id: 'nose-l', kind: 'linear', m: 1, b: 5, from: -2, to: 0, color: RED },
+      { id: 'nose-r', kind: 'linear', m: -1, b: 5, from: 0, to: 2, color: RED },
+      { id: 'fin-l', kind: 'linear', m: 1, b: -1, from: -4, to: -2, color: ORANGE },
+      { id: 'fin-r', kind: 'linear', m: -1, b: -1, from: 2, to: 4, color: ORANGE },
+      { id: 'base', kind: 'linear', m: 0, b: -3, from: -2, to: 2, color: YELLOW },
+    ],
+  },
+  {
+    id: 'diamond',
+    name: 'The Diamond',
+    hint: 'A gem with four facets and a cross through the center.',
+    segments: [
+      { id: 'top-l', kind: 'linear', m: 1, b: 4, from: -4, to: 0, color: PURPLE },
+      { id: 'top-r', kind: 'linear', m: -1, b: 4, from: 0, to: 4, color: PURPLE },
+      { id: 'bot-l', kind: 'linear', m: -1, b: -4, from: -4, to: 0, color: GREEN },
+      { id: 'bot-r', kind: 'linear', m: 1, b: -4, from: 0, to: 4, color: GREEN },
+      { id: 'cross-v', kind: 'vertical', x: 0, from: -4, to: 4, color: YELLOW },
+      { id: 'cross-h', kind: 'linear', m: 0, b: 0, from: -4, to: 4, color: YELLOW },
+    ],
+  },
+  {
+    id: 'crown',
+    name: 'The Crown',
+    hint: 'Three sharp points on a royal band — mind the steep slopes.',
+    segments: [
+      { id: 'base', kind: 'linear', m: 0, b: -2, from: -6, to: 6, color: YELLOW },
+      { id: 'side-l', kind: 'vertical', x: -6, from: -2, to: 2, color: YELLOW },
+      { id: 'side-r', kind: 'vertical', x: 6, from: -2, to: 2, color: YELLOW },
+      { id: 's1-up', kind: 'linear', m: 2, b: 14, from: -6, to: -4, color: PURPLE },
+      { id: 's1-dn', kind: 'linear', m: -2, b: -2, from: -4, to: -2, color: PURPLE },
+      { id: 's2-up', kind: 'linear', m: 2, b: 6, from: -2, to: 0, color: RED },
+      { id: 's2-dn', kind: 'linear', m: -2, b: 6, from: 0, to: 2, color: RED },
+      { id: 's3-up', kind: 'linear', m: 2, b: -2, from: 2, to: 4, color: PURPLE },
+      { id: 's3-dn', kind: 'linear', m: -2, b: 14, from: 4, to: 6, color: PURPLE },
+    ],
+  },
 ]
 
 // Evaluate a segment's endpoints in graph coordinates.
@@ -113,20 +169,25 @@ function formatLinear(m: number, b: number): string {
   return `y = ${slope} ${b > 0 ? '+' : '-'} ${Math.abs(b)}`
 }
 
-// Build a shuffled set of 4 equation options for a segment: the correct one
-// plus three plausible distractors.
-export function buildOptions(seg: Segment): { label: string; correct: boolean }[] {
+// Build a shuffled set of equation options for a segment: the correct one plus
+// `count - 1` plausible distractors. `count` scales with difficulty so later
+// paintings present more choices.
+export function buildOptions(
+  seg: Segment,
+  count = 4,
+): { label: string; correct: boolean }[] {
   const correct = equationLabel(seg)
   const distractors = new Set<string>()
 
   if (seg.kind === 'vertical') {
-    for (const d of [1, -1, 2, -2, 3]) {
+    for (const d of [1, -1, 2, -2, 3, -3, 4]) {
       distractors.add(`x = ${seg.x + d}`)
     }
-    // A tempting "y =" style wrong answer.
+    // Tempting "y =" style wrong answers.
     distractors.add(`y = ${seg.x}`)
+    distractors.add(`y = ${seg.from}`)
   } else {
-    const mVariants = [seg.m, -seg.m, seg.m + 1, seg.m - 1, seg.m + 2]
+    const mVariants = [seg.m, -seg.m, seg.m + 1, seg.m - 1, seg.m + 2, seg.m - 2]
     const bVariants = [seg.b, -seg.b, seg.b + 1, seg.b - 1, seg.b + 2, seg.b - 2]
     for (const m of mVariants) {
       for (const b of bVariants) {
@@ -136,7 +197,7 @@ export function buildOptions(seg: Segment): { label: string; correct: boolean }[
   }
 
   distractors.delete(correct)
-  const picks = shuffle([...distractors]).slice(0, 3)
+  const picks = shuffle([...distractors]).slice(0, Math.max(1, count - 1))
   const options = shuffle([
     { label: correct, correct: true },
     ...picks.map((label) => ({ label, correct: false })),

@@ -30,6 +30,11 @@ export function LinePainterGame() {
   const target = painting.segments[segmentIndex]
   const paintingComplete = segmentIndex >= painting.segments.length
 
+  // Difficulty ramps up as the player advances: later paintings offer more
+  // answer choices (4 → 5 → 6), making the correct equation harder to spot.
+  const optionCount = Math.min(4 + Math.floor(paintingIndex / 2), 6)
+  const level = Math.min(1 + Math.floor(paintingIndex / 2), 3)
+
   // Options are shuffled with Math.random, so they're built client-side only
   // (in an effect) rather than during render — otherwise the server-rendered
   // order and the client's first render order would differ and React would
@@ -37,8 +42,8 @@ export function LinePainterGame() {
   const [options, setOptions] = useState<{ label: string; correct: boolean }[]>([])
 
   useEffect(() => {
-    setOptions(target ? buildOptions(target) : [])
-  }, [paintingIndex, segmentIndex, target])
+    setOptions(target ? buildOptions(target, optionCount) : [])
+  }, [paintingIndex, segmentIndex, target, optionCount])
 
   function handlePick(label: string, correct: boolean) {
     if (!target || paintingComplete) return
@@ -139,6 +144,9 @@ export function LinePainterGame() {
                 <Label variant="accent">
                   Line {Math.min(segmentIndex + 1, painting.segments.length)} /{' '}
                   {painting.segments.length}
+                </Label>
+                <Label variant={level === 1 ? 'success' : level === 2 ? 'attention' : 'danger'}>
+                  {level === 1 ? 'Easy' : level === 2 ? 'Medium' : 'Hard'}
                 </Label>
               </Stack>
               <Heading as="h2" variant="medium">
