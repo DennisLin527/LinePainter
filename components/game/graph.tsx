@@ -1,6 +1,6 @@
 'use client'
 
-import { segmentPoints, type Segment } from '@/lib/paintings'
+import { sampleSegment, type Segment } from '@/lib/paintings'
 
 const MIN = -10
 const MAX = 10
@@ -13,6 +13,15 @@ function toX(x: number) {
 }
 function toY(y: number) {
   return PAD + (MAX - y) * SCALE
+}
+
+// Build an SVG path `d` string for any segment kind by sampling it into
+// pixel-space points.
+function pathFor(seg: Segment): string {
+  const { pts, closed } = sampleSegment(seg)
+  let d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${toX(p.x)} ${toY(p.y)}`).join(' ')
+  if (closed) d += ' Z'
+  return d
 }
 
 type GraphProps = {
@@ -97,56 +106,51 @@ export function Graph({ drawn, target, wrongLine }: GraphProps) {
       <line x1={toX(0)} y1={toY(MIN)} x2={toX(0)} y2={toY(MAX)} stroke="var(--fgColor-muted)" strokeWidth={1.5} />
       {axisLabels}
 
-      {/* Already drawn segments */}
-      {drawn.map((seg) => {
-        const p = segmentPoints(seg)
-        const len = Math.hypot(toX(p.x2) - toX(p.x1), toY(p.y2) - toY(p.y1))
-        return (
-          <line
-            key={seg.id}
-            x1={toX(p.x1)}
-            y1={toY(p.y1)}
-            x2={toX(p.x2)}
-            y2={toY(p.y2)}
-            stroke={seg.color}
-            strokeWidth={4}
-            strokeLinecap="round"
-            style={{
-              strokeDasharray: len,
-              strokeDashoffset: 0,
-              animation: 'lp-draw 500ms ease-out',
-            }}
-          />
-        )
-      })}
+      {/* Already drawn segments. pathLength is normalized to 1 so the same
+          draw-on animation works for straight lines and curves alike. */}
+      {drawn.map((seg) => (
+        <path
+          key={seg.id}
+          d={pathFor(seg)}
+          fill="none"
+          stroke={seg.color}
+          strokeWidth={4}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          pathLength={1}
+          style={{
+            strokeDasharray: 1,
+            strokeDashoffset: 0,
+            animation: 'lp-draw 550ms ease-out',
+          }}
+        />
+      ))}
 
-      {/* Ghost target line the player is trying to match. Drawn on top of
+      {/* Ghost target the player is trying to match. Drawn on top of the
           already-painted segments, with a dark casing + light dashes so it
           stays visible no matter which color it crosses. */}
       {target &&
         (() => {
-          const p = segmentPoints(target)
+          const d = pathFor(target)
           return (
             <g>
-              <line
-                x1={toX(p.x1)}
-                y1={toY(p.y1)}
-                x2={toX(p.x2)}
-                y2={toY(p.y2)}
+              <path
+                d={d}
+                fill="none"
                 stroke="var(--fgColor-black)"
                 strokeWidth={7}
                 strokeLinecap="round"
+                strokeLinejoin="round"
                 opacity={0.85}
               />
-              <line
-                x1={toX(p.x1)}
-                y1={toY(p.y1)}
-                x2={toX(p.x2)}
-                y2={toY(p.y2)}
+              <path
+                d={d}
+                fill="none"
                 stroke="var(--fgColor-onEmphasis)"
                 strokeWidth={3}
                 strokeDasharray="6 6"
                 strokeLinecap="round"
+                strokeLinejoin="round"
               />
             </g>
           )
@@ -168,7 +172,7 @@ export function Graph({ drawn, target, wrongLine }: GraphProps) {
 
       <style>{`
         @keyframes lp-draw {
-          from { stroke-dashoffset: var(--lp-len, 600); opacity: 0.2; }
+          from { stroke-dashoffset: 1; opacity: 0.2; }
           to { stroke-dashoffset: 0; opacity: 1; }
         }
       `}</style>
