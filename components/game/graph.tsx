@@ -97,25 +97,6 @@ export function Graph({ drawn, target, wrongLine }: GraphProps) {
       <line x1={toX(0)} y1={toY(MIN)} x2={toX(0)} y2={toY(MAX)} stroke="var(--fgColor-muted)" strokeWidth={1.5} />
       {axisLabels}
 
-      {/* Ghost target line the player is trying to match */}
-      {target &&
-        (() => {
-          const p = segmentPoints(target)
-          return (
-            <line
-              x1={toX(p.x1)}
-              y1={toY(p.y1)}
-              x2={toX(p.x2)}
-              y2={toY(p.y2)}
-              stroke="var(--fgColor-muted)"
-              strokeWidth={3}
-              strokeDasharray="6 6"
-              strokeLinecap="round"
-              opacity={0.7}
-            />
-          )
-        })()}
-
       {/* Already drawn segments */}
       {drawn.map((seg) => {
         const p = segmentPoints(seg)
@@ -138,6 +119,38 @@ export function Graph({ drawn, target, wrongLine }: GraphProps) {
           />
         )
       })}
+
+      {/* Ghost target line the player is trying to match. Drawn on top of
+          already-painted segments, with a dark casing + light dashes so it
+          stays visible no matter which color it crosses. */}
+      {target &&
+        (() => {
+          const p = segmentPoints(target)
+          return (
+            <g>
+              <line
+                x1={toX(p.x1)}
+                y1={toY(p.y1)}
+                x2={toX(p.x2)}
+                y2={toY(p.y2)}
+                stroke="var(--fgColor-black)"
+                strokeWidth={7}
+                strokeLinecap="round"
+                opacity={0.85}
+              />
+              <line
+                x1={toX(p.x1)}
+                y1={toY(p.y1)}
+                x2={toX(p.x2)}
+                y2={toY(p.y2)}
+                stroke="var(--fgColor-onEmphasis)"
+                strokeWidth={3}
+                strokeDasharray="6 6"
+                strokeLinecap="round"
+              />
+            </g>
+          )
+        })()}
 
       {/* A wrong pick, flashed in red */}
       {wrongLine && (
