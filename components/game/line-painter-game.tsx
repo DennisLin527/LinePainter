@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button, Heading, Text, Stack, Label, Flash, ProgressBar } from '@primer/react'
 import {
   PaintbrushIcon,
@@ -30,12 +30,15 @@ export function LinePainterGame() {
   const target = painting.segments[segmentIndex]
   const paintingComplete = segmentIndex >= painting.segments.length
 
-  // Options are rebuilt whenever the active target changes.
-  const options = useMemo(
-    () => (target ? buildOptions(target) : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [paintingIndex, segmentIndex],
-  )
+  // Options are shuffled with Math.random, so they're built client-side only
+  // (in an effect) rather than during render — otherwise the server-rendered
+  // order and the client's first render order would differ and React would
+  // throw a hydration mismatch.
+  const [options, setOptions] = useState<{ label: string; correct: boolean }[]>([])
+
+  useEffect(() => {
+    setOptions(target ? buildOptions(target) : [])
+  }, [paintingIndex, segmentIndex, target])
 
   function handlePick(label: string, correct: boolean) {
     if (!target || paintingComplete) return
